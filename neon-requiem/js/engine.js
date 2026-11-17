@@ -269,6 +269,7 @@
     mystery: { label: '미확인', en: 'UNKNOWN', w: 15, hint: '정체를 알 수 없는 신호.' },
     story: { label: '스토리', en: 'STORY', hint: '이야기가 움직인다.' },
     boss: { label: '결전', en: 'CRISIS', hint: '피할 수 없는 고비.' },
+    ambush: { label: '매복', en: 'AMBUSH' },
   };
 
   function beginAct(n) {
@@ -282,9 +283,19 @@
     if (typeof f === 'function') f = f(run);
     return f || null;
   }
+  /* 지나온 길 기록: 막·구역마다 고른 행선지의 종류와 장소 */
+  function markTrail(type, loc) {
+    const t = (run.trail || []).filter((x) => !(x.a === run.act && x.s === run.step));
+    t.push({ a: run.act, s: run.step, t: type, l: loc });
+    run.trail = t;
+  }
   function prepareStep(auto) {
     const forced = forcedAt(run.act, run.step);
-    if (forced && auto) { enterScene(forced); return; }
+    if (forced && auto) {
+      const sc = D.scenes[forced];
+      markTrail(sc.boss ? 'boss' : 'story', val(sc.loc, run));
+      enterScene(forced); return;
+    }
     run.cards = genCards(); run.mode = 'map';
     saveRun(); render();
   }
@@ -343,11 +354,14 @@
     if (!c) return;
     sfx('click');
     run.lastType = c.type;
+    const loc = c.type === 'mystery' ? val(D.scenes[c.id].loc, run) : c.loc;
     if (c.type !== 'story' && c.type !== 'boss' && D.acts[run.act].ambush && Math.random() * 100 < ambushChance()) {
       toast('매복! 추적자들이 길목을 막았다.');
+      markTrail('ambush', loc);
       enterScene(D.acts[run.act].ambush);
       return;
     }
+    markTrail(c.type, loc);
     enterScene(c.id);
   }
   function finishStep() {
@@ -779,6 +793,7 @@
       <div class="hud-row">
         <div class="hud-id"><b>${esc(run.name)}</b><span>${esc(O.name)}</span></div>
         <div class="hud-act">${esc(actLabel())}</div>
+        <button class="hud-btn" data-a="mapview" aria-label="도시 지도 열기">지도</button>
         <button class="hud-btn" data-a="drawer" aria-label="소지품 열기">소지품 <b>${run.items.length + run.ware.length}</b></button>
       </div>
       <div class="hud-meters">
@@ -832,21 +847,171 @@
     return h + '</div>';
   }
 
-  function progressHTML() {
-    const A = D.acts[run.act];
-    let h = '<div class="prog" aria-label="진행도">';
-    A.script.forEach((s, i) => {
-      const cls = i < run.step ? 'done' : i === run.step ? 'now' : '';
-      const kind = i === A.script.length - 1 ? 'boss' : s ? 'star' : '';
-      h += `<i class="${cls} ${kind}"></i>`;
-    });
-    return h + '</div>';
+  /* ------------------------------------------------------- 할시온 지도 */
+  const polar = (cx, cy, r, deg) => [+(cx + r * Math.cos(deg * Math.PI / 180)).toFixed(1), +(cy + r * Math.sin(deg * Math.PI / 180)).toFixed(1)];
+  const MAP = (NR.MAP = {
+    /* 막마다 구역 수만큼의 지점 (전체 지도 좌표계 640×360). 3막은 탑을 오르는 나선. */
+    nodes: {
+      0: [[52, 262]],
+      1: [[88, 252], [118, 220], [152, 198], [168, 240], [198, 275], [226, 245], [206, 210], [238, 188], [264, 232]],
+      2: [[296, 246], [322, 210], [352, 236], [372, 196], [340, 165], [378, 140], [410, 175], [428, 222], [446, 186], [470, 140]],
+      3: Array.from({ length: 8 }, (_, i) => (i === 7 ? [560, 110] : polar(560, 110, 50 * (1 - i / 7), 160 + 70 * i))),
+    },
+    view: { 0: [0, 190, 288, 120], 1: [32, 172, 288, 120], 2: [220, 125, 326, 136], 3: [404, 45, 312, 130] },
+    goal: { 0: '배수로', 1: '대수문', 2: '구름다리', 3: '레테 코어' },
+    goalLong: { 0: '7번 부두 배수로', 1: '웰스 북쪽 대수문', 2: '자기부상열차 구름다리', 3: '스파이어 최상층 · 레테 코어' },
+    district: { 0: '7번 부두', 1: '더 웰스', 2: '크롬 바자르', 3: '백야 스파이어' },
+  });
+  const STREETS = [[120, 40, 330, 120], [200, 0, 250, 150], [300, 60, 480, 40], [420, 0, 440, 110], [480, 200, 700, 240], [470, 300, 700, 280],
+    [330, 300, 420, 360], [260, 120, 290, 0], [150, 150, 240, 100], [520, 170, 600, 330], [600, 20, 700, 120], [40, 120, 160, 60], [610, 160, 700, 175]];
+  const trailAt = (a, s) => (run.trail || []).find((x) => x.a === a && x.s === s);
+  /* 현재 위치 [막, 구역]. 지도 화면에서는 방금 지나온 구역, 장면·전투 중에는 지금 구역. -1이면 막 입구. */
+  function curPos() {
+    if (run.mode === 'act') return [run.act, -1];
+    if (run.mode === 'map') return [run.act, run.step - 1];
+    return [run.act, Math.min(run.step, D.acts[run.act].script.length - 1)];
   }
+  function posPoint(a, i) {
+    if (i >= 0) return MAP.nodes[a][Math.min(i, MAP.nodes[a].length - 1)];
+    if (a > 0) { const p = MAP.nodes[a - 1]; return p[p.length - 1]; }
+    return MAP.nodes[0][0];
+  }
+  function posName(a, i) {
+    if (i >= 0) {
+      if (run.mode !== 'map' && run.mode !== 'act' && run.sceneLoc && a === run.act && i === run.step) return run.sceneLoc;
+      const t = trailAt(a, i);
+      if (t) return t.l;
+    }
+    if (a > 0) { const t = trailAt(a - 1, D.acts[a - 1].script.length - 1); return t ? t.l : MAP.goalLong[a - 1]; }
+    return MAP.goalLong[0];
+  }
+  function cityMapSVG(kind, youLabel) {
+    const seq = [];
+    Object.keys(MAP.nodes).forEach((a) => MAP.nodes[a].forEach((p, s) => seq.push({ a: +a, s, p })));
+    const [pa, pi] = curPos();
+    let cur = seq.findIndex((x) => x.a === pa && x.s === Math.max(0, pi));
+    if (pi < 0) cur -= 1;
+    const inline = kind === 'inline';
+    const vb = inline ? MAP.view[run.act] : [0, 0, 640, 360];
+    const [mx, my] = posPoint(pa, pi);
+    const id = (n) => `nr-${n}-${kind}`;
+    const where = posName(pa, pi);
+    let h = `<svg class="citymap ${kind}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid meet" data-cx="${mx}" role="img" aria-label="${esc(`할시온 지도. 현재 위치: ${pa === 0 ? '프롤로그' : 'ACT ' + pa + ' ' + D.acts[pa].name}, ${where}`)}">
+      <defs>
+        <pattern id="${id('sea')}" width="14" height="10" patternUnits="userSpaceOnUse"><path d="M0 6 q3.5 -3 7 0 t7 0" fill="none" stroke="rgba(92,242,220,0.10)" stroke-width="0.8"/></pattern>
+        <pattern id="${id('flood')}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><line x1="0" y1="0" x2="0" y2="7" stroke="rgba(92,242,220,0.16)" stroke-width="1"/></pattern>
+        <radialGradient id="${id('spire')}"><stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="0.3" stop-color="#c8dcff" stop-opacity="0.35"/><stop offset="1" stop-color="#c8dcff" stop-opacity="0"/></radialGradient>
+      </defs>
+      <rect class="m-sea" x="-120" y="-60" width="900" height="480"/>
+      <rect x="-120" y="-60" width="900" height="480" fill="url(#${id('sea')})"/>
+      <path class="m-land" d="M-120 -60 H780 V420 H230 C220 380 200 345 160 322 C120 300 80 290 55 262 C35 240 15 222 -120 196 Z"/>
+      <g class="m-grid">${STREETS.map(([x1, y1, x2, y2]) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`).join('')}</g>
+      <path class="m-wells" d="M66 252 L104 182 L198 168 L254 196 L258 292 L228 330 L148 332 L98 302 Z"/>
+      <path d="M66 252 L104 182 L198 168 L254 196 L258 292 L228 330 L148 332 L98 302 Z" fill="url(#${id('flood')})"/>
+      <path class="m-bazaar" d="M284 168 L330 120 L420 114 L456 168 L452 260 L392 296 L300 282 Z"/>
+      <g class="m-stalls"><rect x="316" y="150" width="14" height="9"/><rect x="398" y="128" width="12" height="9"/><rect x="420" y="240" width="14" height="9"/><rect x="300" y="262" width="12" height="8"/><rect x="392" y="205" width="10" height="10"/></g>
+      <circle class="m-spire-zone" cx="560" cy="110" r="62"/>
+      <circle class="m-spire-ring" cx="560" cy="110" r="44"/><circle class="m-spire-ring" cx="560" cy="110" r="26"/>
+      <circle cx="560" cy="110" r="26" fill="url(#${id('spire')})"/>
+      <line class="m-gate" x1="268" y1="176" x2="268" y2="300"/>
+      <path class="m-rail" d="M456 158 L512 124"/>
+      <path class="m-pier" d="M30 262 L52 256 L56 266 L34 272 Z"/><circle class="m-fire" cx="44" cy="258" r="4"/>`;
+    if (inline) h += `<text class="m-label big" x="${vb[0] + 10}" y="${vb[1] + 20}">${esc(MAP.district[run.act])}</text>`;
+    else {
+      h += `<text class="m-label sea" x="40" y="340">할시온 만</text><text class="m-label" x="12" y="292">7번 부두</text>
+        <text class="m-label big" x="118" y="352">더 웰스</text><text class="m-label small" x="274" y="172">대수문</text>
+        <text class="m-label big" x="322" y="106">크롬 바자르</text><text class="m-label small" x="474" y="168">자기부상 구름다리</text>
+        <text class="m-label big" x="508" y="196">백야 스파이어</text>`;
+    }
+    const pts = seq.map((x) => x.p.join(','));
+    if (cur > 0) h += `<polyline class="m-route done" points="${pts.slice(0, cur + 1).join(' ')}"/>`;
+    h += `<polyline class="m-route todo" points="${pts.slice(Math.max(0, cur)).join(' ')}"/>`;
+    seq.forEach((x, j) => {
+      const [cx, cy] = x.p;
+      const A = D.acts[x.a];
+      const last = x.a > 0 && x.s === A.script.length - 1;
+      const forced = !!A.script[x.s];
+      const name = `${x.a === 0 ? '프롤로그' : 'ACT ' + x.a} · ${x.s + 1}구역`;
+      if (j <= cur) {
+        const t = trailAt(x.a, x.s);
+        const type = (t && t.t) || (forced ? (last ? 'boss' : 'story') : 'event');
+        h += `<circle class="n v t-${type}" cx="${cx}" cy="${cy}" r="4.2"><title>${esc(`${name} — ${t ? t.l + ' · ' : ''}${TYPES[type].label}`)}</title></circle>`;
+      } else if (j === cur + 1 && run.mode === 'map') {
+        h += `<circle class="n next" cx="${cx}" cy="${cy}" r="5"><title>${esc(name + ' — 다음 행선지')}</title></circle>`;
+      } else if (last) {
+        h += `<rect class="n fut-boss" x="${cx - 4.2}" y="${cy - 4.2}" width="8.4" height="8.4" transform="rotate(45 ${cx} ${cy})"><title>${esc(`${name} — 결전 · ${MAP.goalLong[x.a]}`)}</title></rect>`;
+      } else if (forced) {
+        h += `<circle class="n fut-story" cx="${cx}" cy="${cy}" r="3.4"><title>${esc(name + ' — 스토리')}</title></circle>`;
+      } else {
+        h += `<circle class="n fut" cx="${cx}" cy="${cy}" r="2.4"/>`;
+      }
+    });
+    if (inline && run.act > 0) {
+      const g = MAP.nodes[run.act][MAP.nodes[run.act].length - 1];
+      h += `<text class="m-goal" x="${g[0]}" y="${g[1] + 16}" text-anchor="middle">${esc(MAP.goal[run.act])}</text>`;
+    }
+    const label = youLabel || '현재 위치';
+    const lw = label.length * 9 + 12;
+    const ly = my - 25 < vb[1] + 2 ? my + 11 : my - 25;
+    h += `<circle class="n-pulse" cx="${mx}" cy="${my}" r="10"/><circle class="n cur" cx="${mx}" cy="${my}" r="5.4"><title>${esc(label + ' — ' + where)}</title></circle>
+      <g class="m-you"><rect x="${mx - lw / 2}" y="${ly}" width="${lw}" height="14" rx="2"/><text x="${mx}" y="${ly + 10.5}" text-anchor="middle">${esc(label)}</text></g>`;
+    return h + '</svg>';
+  }
+  function mapBoxHTML() {
+    const A = D.acts[run.act];
+    const [pa, pi] = curPos();
+    return `<div class="mapbox">
+      ${cityMapSVG('inline')}
+      <div class="mapinfo">
+        <span class="eyebrow">현재 위치</span>
+        <b class="here">${esc(posName(pa, pi))}</b>
+        <span class="where">${run.act === 0 ? '프롤로그' : `ACT ${run.act} · ${esc(A.name)}`} · ${run.mode === 'act' ? 0 : run.step}/${A.script.length} 구역 통과</span>
+        <span class="goal-line">목표 지점 · ${esc(MAP.goalLong[run.act])}</span>
+        <button class="btn small ghost" data-a="mapview">도시 전체 지도 <kbd>M</kbd></button>
+      </div>
+    </div>`;
+  }
+  function mapSheetHTML() {
+    const [pa, pi] = curPos();
+    const legend = ['event', 'fight', 'market', 'clinic', 'rest', 'mystery', 'story', 'boss', 'ambush']
+      .map((k) => `<span><i class="lg t-${k}"></i>${TYPES[k].label}</span>`).join('');
+    let j = '';
+    Object.keys(D.acts).forEach((ak) => {
+      const a = +ak, A = D.acts[a];
+      const head = `${a === 0 ? '프롤로그' : 'ACT ' + a} · ${esc(A.name)}`;
+      if (a > run.act) { j += `<section class="journey locked"><h3 class="sub">${head}</h3><p class="muted">아직 가 보지 않은 구역이다.</p></section>`; return; }
+      j += `<section class="journey${a === run.act ? ' now' : ''}"><h3 class="sub">${head}</h3><ol>`;
+      A.script.forEach((sc, s) => {
+        const t = trailAt(a, s);
+        const last = a > 0 && s === A.script.length - 1;
+        if (t) {
+          const isCur = a === pa && s === pi;
+          j += `<li class="${isCur ? 'cur' : 'done'}"><span class="no">${s + 1}</span><i class="lg t-${t.t}"></i><span class="jl">${esc(t.l)}</span><small>${isCur ? '현재 위치' : TYPES[t.t].label}</small></li>`;
+        } else if (a === run.act) {
+          const isNext = run.mode === 'map' && s === run.step;
+          const kind = last ? 'boss' : sc ? 'story' : '';
+          const label = isNext ? '다음 행선지 — 고르는 중' : last ? '결전 · ' + MAP.goalLong[a] : sc ? '스토리' : '아직 모름';
+          j += `<li class="todo${isNext ? ' next' : ''}"><span class="no">${s + 1}</span><i class="lg ${kind ? 't-' + kind : 'blank'}"></i><span class="jl">${esc(label)}</span><small></small></li>`;
+        }
+      });
+      j += '</ol></section>';
+    });
+    return `<div class="drawer-bg" data-a="mapview"></div>
+      <section class="mapsheet" role="dialog" aria-label="할시온 지도">
+        <div class="drawer-head"><h2>할시온 지도</h2><button class="btn small ghost" data-a="mapview">닫기</button></div>
+        <p class="muted small">현재 위치 · <b class="here-inline">${esc(posName(pa, pi))}</b></p>
+        <div class="mapscroll">${cityMapSVG('full')}</div>
+        <div class="legend">${legend}<span><i class="lg you"></i>현재 위치</span></div>
+        ${j}
+      </section>`;
+  }
+
   function mapHTML() {
     const A = D.acts[run.act];
     const risk = ambushChance();
     let h = `<section class="map">
-      <div class="map-head"><div><span class="eyebrow">${run.act === 0 ? 'PROLOGUE' : 'ACT ' + run.act} · ${esc(A.en)}</span><h2>${esc(A.name)}</h2></div>${progressHTML()}</div>
+      <div class="map-head"><div><span class="eyebrow">${run.act === 0 ? 'PROLOGUE' : 'ACT ' + run.act} · ${esc(A.en)}</span><h2>${esc(A.name)}</h2></div></div>
+      ${mapBoxHTML()}
       ${run.ambient ? `<div class="ambient prose">${fmt(run.ambient)}</div>` : ''}
       ${run.heatTick && run.cards.length > 1 ? '<p class="heat-tick">추적망이 좁혀 온다 · 열기 +1</p>' : ''}
       <div class="map-sub"><span>${run.cards.length > 1 ? '다음 행선지를 고르세요' : '피할 수 없는 길이다'}</span>${run.cards.length > 1 ? `<span class="risk${risk >= 25 ? ' high' : ''}">매복 위험 ${risk}%</span>` : ''}</div>
@@ -952,6 +1117,7 @@
       ${A.time ? `<div class="act-time">${esc(A.time)}</div>` : ''}
       <div class="prose">${fmt(val(A.intro, run))}</div>
       ${A.goal ? `<div class="goal"><span class="eyebrow">목표</span>${esc(A.goal)}</div>` : ''}
+      ${mapBoxHTML()}
       ${run.unlockMsg ? `<div class="unlock">${esc(run.unlockMsg)}</div>` : ''}
       <div class="actions"><button class="btn primary" data-a="actgo">${run.act === 0 ? '시작' : '진입'}</button></div>
     </section>`;
@@ -996,6 +1162,7 @@
       <dl><div><dt>도달</dt><dd>${run.act === 0 ? '프롤로그' : 'ACT ' + run.act}</dd></div><div><dt>처치</dt><dd>${run.kills}</dd></div>
       <div><dt>유대</dt><dd>${run.bond}</dd></div><div><dt>인간성</dt><dd>${run.hum}</dd></div>
       <div><dt>동료</dt><dd>${run.comps.length ? run.comps.map((c) => esc(D.comps[c].name)).join(', ') : '없음'}</dd></div></dl></div>`;
+    h += `<div class="journey-end"><span class="eyebrow">여정</span><div class="mapscroll">${cityMapSVG('full', death ? '쓰러진 곳' : '마지막 위치')}</div></div>`;
     h += `<div class="echo"><span class="eyebrow">획득한 에코</span><ul>${E.br.map((b) => `<li><span>${b[0]}</span><b>+${b[1]}</b></li>`).join('')}</ul><div class="echo-total">합계 <b>+${E.total}</b> · 보유 ${meta.echoes}</div></div>`;
     h += `<div class="actions"><button class="btn primary" data-a="newgame">다시 시뮬레이션</button><button class="btn" data-a="upgrades">에코 강화</button><button class="btn ghost" data-a="title">타이틀로</button></div></section>`;
     return h;
@@ -1113,15 +1280,18 @@
         else if (run.mode === 'shop') h += shopHTML();
         h += '</div>';
         if (ui.drawer) h += drawerHTML();
+        else if (ui.mapOpen) h += mapSheetHTML();
       }
     } else if (ui.view === 'setup') h = setupHTML();
     else if (ui.view === 'archive') h = archiveHTML();
     else if (ui.view === 'upgrades') h = upgradesHTML();
     else if (ui.view === 'settings') h = settingsHTML();
     else h = titleHTML();
+    if (ui.view !== 'run' || !run || run.mode === 'end') ui.mapOpen = false;
     app.innerHTML = h;
     app.dataset.view = view;
     document.body.classList.toggle('still', !meta.settings.motion);
+    document.body.classList.toggle('locked', !!(ui.drawer || ui.mapOpen));
     afterRender(changed);
     ui.lastView = view;
   }
@@ -1132,6 +1302,12 @@
     if (changed || (run && run.mode === 'scene' && app.querySelector('.scene.fresh'))) window.scrollTo(0, 0);
     else if (logEntry) { try { logEntry.scrollIntoView({ behavior, block: 'start' }); } catch (e) { logEntry.scrollIntoView(); } }
     else if (fightEntry) { const mv = app.querySelector('.moves, .fight .actions'); const t = mv || fightEntry; try { t.scrollIntoView({ behavior, block: 'nearest' }); } catch (e) { t.scrollIntoView(); } }
+    /* 좁은 화면에서 가로로 넘치는 전체 지도는 현재 위치가 가운데 오도록 스크롤 */
+    app.querySelectorAll('.mapscroll').forEach((el) => {
+      const svg = el.querySelector('svg');
+      if (!svg || el.scrollWidth <= el.clientWidth + 2) return;
+      el.scrollLeft = Math.max(0, (+svg.dataset.cx / 640) * el.scrollWidth - el.clientWidth / 2);
+    });
     if (meta.settings.motion) {
       app.querySelectorAll('.fresh .r-num').forEach((el) => {
         const n = el.dataset.n; let k = 0;
@@ -1174,7 +1350,8 @@
     buy(x) { buy(x); },
     sell(x) { sell(+x); },
     leaveShop() { leaveShop(); },
-    drawer() { ui.drawer = !ui.drawer; render(); },
+    drawer() { ui.drawer = !ui.drawer; ui.mapOpen = false; render(); },
+    mapview() { ui.mapOpen = !ui.mapOpen; ui.drawer = false; sfx('click'); render(); },
     use(x) { useItem(+x); },
     buyUp(x) {
       const U = D.upgrades[x];
@@ -1274,9 +1451,10 @@
     document.addEventListener('keydown', (e) => {
       const tg = e.target && e.target.tagName;
       if (tg === 'INPUT' || tg === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === 'Escape' && ui.drawer) { ui.drawer = false; render(); return; }
+      if (e.key === 'Escape' && (ui.drawer || ui.mapOpen)) { ui.drawer = false; ui.mapOpen = false; render(); return; }
+      if ((e.key === 'm' || e.key === 'M' || e.key === 'ㅡ') && ui.view === 'run' && run && run.mode !== 'end') { e.preventDefault(); ACTIONS.mapview(); return; }
       if (/^[1-9]$/.test(e.key)) {
-        const scope = ui.drawer ? null : app.querySelector('.choices, .cards, .moves');
+        const scope = ui.drawer || ui.mapOpen ? null : app.querySelector('.choices, .cards, .moves');
         const btn = scope && scope.querySelector(`[data-key="${e.key}"]`);
         if (btn && !btn.disabled) { e.preventDefault(); btn.click(); }
       } else if (e.key === 'Enter' && !(document.activeElement && document.activeElement.tagName === 'BUTTON')) {
@@ -1301,7 +1479,7 @@
   NR.core = {
     newRun, beginAct, prepareStep, chooseCard, enterScene, listChoices, choose, proceed,
     fightMoves, fightAct, fightItem, fightProceed, openShop, buy, sell, leaveShop, useItem, endRun,
-    calcChance, reqCheck, applyFx, price,
+    calcChance, reqCheck, applyFx, price, cityMapSVG, mapBoxHTML, mapSheetHTML,
     get run() { return run; }, set run(v) { run = v; },
     get meta() { return meta; }, set meta(v) { meta = v; },
     TYPES, STAT,

@@ -100,6 +100,8 @@ Object.entries(D.enemies).forEach(([id, E]) => {
 Object.entries(D.acts).forEach(([n, A]) => {
   A.script.forEach((s, i) => { if (typeof s === 'string' && !D.scenes[s]) errors.push(`act ${n} step ${i}: 없는 장면 ${s}`); if (typeof s === 'function') noteRead(s, `act ${n}`); });
   ['market', 'clinic', 'rest', 'ambush'].forEach((k) => { if (A[k] && !D.scenes[A[k]]) errors.push(`act ${n}: 없는 ${k} 장면 ${A[k]}`); });
+  const pts = NR.MAP && NR.MAP.nodes[n];
+  if (!pts || pts.length !== A.script.length) errors.push(`act ${n}: 지도 지점 ${pts ? pts.length : 0}개 ≠ 구역 ${A.script.length}개`);
   if (+n > 0) {
     const ev = Object.values(D.scenes).filter((sc) => sc.kind === 'event' && (sc.acts === 'any' || arr(sc.acts).includes(+n)));
     const fi = Object.values(D.scenes).filter((sc) => sc.kind === 'fight' && arr(sc.acts).includes(+n));
@@ -268,7 +270,9 @@ function playRun(policy, origin) {
   const visited = new Set();
   for (let guard = 0; guard < 4000; guard++) {
     const r = C.run;
-    if (r.mode === 'end') return { ending: r.ending.id, act: r.act, steps: r.steps, run: r, visited };
+    /* 모든 상태에서 지도 렌더가 예외 없이 문자열을 만드는지 확인 */
+    if (r.mode === 'end') { C.cityMapSVG('full', '마지막 위치'); return { ending: r.ending.id, act: r.act, steps: r.steps, run: r, visited }; }
+    if (guard % 3 === 0) { C.mapBoxHTML(); C.mapSheetHTML(); }
     if (r.mode === 'act') { r.unlockMsg = null; C.prepareStep(true); continue; }
     if (r.mode === 'map') { policy.outside(r); C.chooseCard(policy.card(r)); continue; }
     if (r.mode === 'scene') {

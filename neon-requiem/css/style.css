@@ -33,6 +33,7 @@
   --r: 3px;
 }
 
+*, *::before, *::after { box-sizing: border-box; }
 html { background: var(--void); }
 body {
   margin: 0;
@@ -268,13 +269,92 @@ h3.sub {
 /* ---------- map ---------- */
 .map-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .map-head .eyebrow { color: var(--neon); }
-.prog { display: flex; gap: 5px; align-items: center; padding-bottom: 6px; }
-.prog i { width: 14px; height: 6px; background: var(--hull-3); border-radius: 1px; }
-.prog i.star { background: rgba(255, 63, 142, 0.35); }
-.prog i.boss { width: 20px; background: rgba(255, 93, 100, 0.45); }
-.prog i.done { background: var(--mute); }
-.prog i.now { background: var(--neon); box-shadow: 0 0 10px var(--neon); }
 .ambient { margin-top: 18px; }
+
+/* ---------- city map ---------- */
+.mapbox {
+  display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 18px; align-items: center;
+  margin-top: 16px; padding: 10px; border: 1px solid var(--wire); border-radius: var(--r); background: #060a13;
+}
+.citymap { display: block; width: 100%; height: auto; border-radius: 2px; }
+.mapinfo { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; padding-right: 6px; }
+.mapinfo .eyebrow { color: var(--mia); }
+.mapinfo .here { font-family: var(--font-display); font-weight: 400; font-size: 23px; line-height: 1.3; color: #eafffb; }
+.mapinfo .where { font-size: 13.5px; color: var(--mute); }
+.mapinfo .goal-line { font-size: 13.5px; color: var(--blood); }
+.mapinfo .btn { margin-top: 10px; }
+kbd { font-family: var(--font-hud); font-size: 11px; line-height: 1.5; padding: 0 5px; border: 1px solid var(--wire-2); border-radius: 2px; color: var(--mute); }
+.act-card .mapbox { margin-top: 18px; }
+.m-sea { fill: #060b14; }
+.m-land { fill: #0c0f1e; stroke: #2c3255; stroke-width: 1; }
+.m-grid line { stroke: rgba(149, 154, 192, 0.09); stroke-width: 1; }
+.m-wells { fill: rgba(92, 242, 220, 0.05); stroke: rgba(92, 242, 220, 0.4); stroke-width: 1; stroke-dasharray: 3 3; }
+.m-bazaar { fill: rgba(255, 191, 90, 0.06); stroke: rgba(255, 191, 90, 0.4); stroke-width: 1; }
+.m-stalls rect { fill: rgba(255, 191, 90, 0.14); }
+.m-spire-zone { fill: rgba(200, 220, 255, 0.04); stroke: rgba(200, 220, 255, 0.32); stroke-width: 1; }
+.m-spire-ring { fill: none; stroke: rgba(200, 220, 255, 0.16); stroke-width: 1; stroke-dasharray: 2 3; }
+.m-gate { stroke: var(--sodium); stroke-width: 3.5; stroke-linecap: round; }
+.m-rail { fill: none; stroke: rgba(200, 220, 255, 0.55); stroke-width: 2; stroke-dasharray: 1 4; stroke-linecap: round; }
+.m-pier { fill: #252b4a; }
+.m-fire { fill: var(--heat); opacity: 0.85; animation: pulse 1.6s infinite; }
+.m-label { fill: var(--mute); font-family: var(--font-body); font-size: 11px; font-weight: 500; }
+.m-label.big { fill: rgba(226, 228, 246, 0.55); font-family: var(--font-display); font-weight: 400; font-size: 15px; letter-spacing: 0.04em; }
+.m-label.small { font-size: 9.5px; }
+.m-label.sea { fill: rgba(92, 242, 220, 0.4); font-style: italic; }
+.m-goal { fill: var(--blood); font-family: var(--font-body); font-size: 9px; font-weight: 700; }
+.m-route { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.m-route.done { stroke: var(--neon); stroke-width: 2; filter: drop-shadow(0 0 3px rgba(255, 63, 142, 0.6)); }
+.m-route.todo { stroke: rgba(149, 154, 192, 0.4); stroke-width: 1.4; stroke-dasharray: 3 4; }
+.n { stroke: #060a13; stroke-width: 1.4; }
+.n.t-event, .lg.t-event { fill: #9ba6e8; background: #9ba6e8; }
+.n.t-fight, .lg.t-fight { fill: var(--blood); background: var(--blood); }
+.n.t-market, .lg.t-market { fill: var(--sodium); background: var(--sodium); }
+.n.t-clinic, .lg.t-clinic { fill: var(--mia); background: var(--mia); }
+.n.t-rest, .lg.t-rest { fill: var(--soul); background: var(--soul); }
+.n.t-mystery, .lg.t-mystery { fill: var(--neon); background: var(--neon); }
+.n.t-story, .lg.t-story { fill: #ff8fc0; background: #ff8fc0; }
+.n.t-boss, .lg.t-boss { fill: #ff2e3c; background: #ff2e3c; }
+.n.t-ambush, .lg.t-ambush { fill: var(--heat); background: var(--heat); }
+.n.fut { fill: #060a13; stroke: var(--faint); stroke-width: 1.1; }
+.n.fut-story { fill: #060a13; stroke: #ff8fc0; stroke-width: 1.3; }
+.n.fut-boss { fill: #060a13; stroke: #ff2e3c; stroke-width: 1.6; }
+.n.next { fill: rgba(255, 63, 142, 0.18); stroke: var(--neon); stroke-width: 1.6; stroke-dasharray: 2.2 1.8; }
+.n.cur { fill: var(--mia); stroke: #ffffff; stroke-width: 1.6; }
+.n-pulse { fill: none; stroke: var(--mia); stroke-width: 1.6; transform-box: fill-box; transform-origin: center; animation: ping 1.8s ease-out infinite; }
+.m-you rect { fill: var(--mia); }
+.m-you text { fill: #04140f; font-family: var(--font-body); font-size: 9px; font-weight: 700; }
+.mapsheet {
+  position: fixed; z-index: 21; inset: 0; margin: 0 auto; width: min(780px, 100%); overflow-y: auto;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  background: var(--hull); border: 1px solid var(--wire-2); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); animation: rise 0.25s both;
+}
+.mapsheet .here-inline { color: var(--mia); }
+.mapscroll { overflow-x: auto; margin-top: 10px; border: 1px solid var(--wire); border-radius: var(--r); background: #060a13; -webkit-overflow-scrolling: touch; }
+.mapscroll .citymap { min-width: 600px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12.5px; color: var(--mute); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.lg { display: inline-block; flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; }
+.lg.you { background: var(--mia); box-shadow: 0 0 0 2px #ffffff inset, 0 0 8px var(--mia); }
+.lg.blank { background: transparent; border: 1px solid var(--faint); }
+.journey h3.sub { margin-top: 22px; }
+.journey.now h3.sub { color: var(--neon); }
+.journey ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.journey li { display: grid; grid-template-columns: 24px 10px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 2px; font-size: 14.5px; }
+.journey li .no { font-family: var(--font-hud); font-size: 12px; color: var(--faint); text-align: right; }
+.journey li small { font-size: 12px; color: var(--mute); white-space: nowrap; }
+.journey li.cur { background: var(--mia-soft); outline: 1px solid rgba(92, 242, 220, 0.5); }
+.journey li.cur .jl, .journey li.cur small { color: var(--mia); font-weight: 700; }
+.journey li.todo { color: var(--faint); }
+.journey li.next { color: var(--neon); }
+.journey.locked p { margin: 0; font-size: 14px; }
+.journey-end { margin-top: 30px; }
+.journey-end .eyebrow { color: var(--neon); }
+body.locked { overflow: hidden; }
+@keyframes ping { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(1.7); opacity: 0; } }
+@media (min-width: 820px) {
+  .mapsheet { inset: 4vh 0 auto; max-height: 92vh; border-radius: var(--r); }
+  .mapscroll .citymap { min-width: 0; }
+}
 .heat-tick { margin: 14px 0 0; font-size: 13.5px; color: var(--heat); }
 .map-sub { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 22px 0 10px; font-size: 14px; color: var(--mute); }
 .risk { font-family: var(--font-hud); font-size: 12px; letter-spacing: 0.06em; color: var(--heat); border: 1px solid rgba(255, 138, 58, 0.4); padding: 1px 8px; border-radius: 2px; white-space: nowrap; }
@@ -517,6 +597,11 @@ body.still *, body.still *::before, body.still *::after { animation: none !impor
 @media (max-width: 560px) {
   body { font-size: 15.5px; }
   .hud { padding-block: 8px 7px; }
+  .hud-row { gap: 8px; }
+  .hud-btn { padding: 0 8px; }
+  .mapbox { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 8px; }
+  .mapinfo { padding: 0 4px 4px; }
+  .mapinfo .here { font-size: 20px; }
   .hud-meters { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 10px; margin-top: 6px; }
   .meter.hp { grid-column: 1 / -1; }
   .meter:not(.hp) { align-items: baseline; gap: 5px; }
