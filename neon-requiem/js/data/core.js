@@ -64,7 +64,7 @@
   NR.def('enemies', {
     /* ---- ACT 1 ---- */
     patrol1: {
-      name: '아이언사이드 순찰조', short: '순찰조', en: 'IRONSIDE PATROL', hp: 3, atk: [1, 3], talk: true,
+      name: '아이언사이드 순찰조', short: '순찰조', en: 'IRONSIDE PATROL', hp: 3, atk: [2, 3], talk: true,
       desc: '방탄 우비를 입은 민간 경찰 셋. 월급만큼만 싸운다.',
       intro: '"거기 멈춰! 손목의 케이스, 바닥에 내려놔!" 손전등 불빛이 당신 얼굴에 꽂힌다.',
       txt: { talk: '"…씨발, 월급 받고 하는 일이지 목숨 걸고 하는 일 아니다." 순찰조가 뒷걸음질 친다.', win: '마지막 순찰대원이 물속에 처박힌다. 무전기에서 지직거리는 호출음만 남는다.' },
@@ -126,7 +126,7 @@
       loot: { cred: [60, 90], items: [['medkit', 1]] },
     },
     hunters1: {
-      name: '아이언사이드 추적조', short: '추적조', en: 'TRACKERS', hp: 3, atk: [2, 3], talk: true,
+      name: '아이언사이드 추적조', short: '추적조', en: 'TRACKERS', hp: 3, atk: [2, 4], talk: true,
       desc: '현상금 신호를 쫓아온 추적 전문 팀. 열 감지 고글을 썼다.',
       intro: '"열 신호 확인. 목표 발견." 사방에서 레이저 조준점이 당신 가슴에 모인다.',
       txt: { talk: '"…신호가 끊겼다고 보고하지. 대신 다음엔 없다." 추적조가 물러난다.', win: '추적조가 쓰러진다. 그들의 열 감지 고글이 당신의 체온을 마지막으로 기록한다.' },
@@ -135,14 +135,14 @@
 
     /* ---- ACT 2 ---- */
     fever2: {
-      name: '블루 피버 조직원', short: '조직원', en: 'BLUE FEVER', hp: 3, atk: [2, 4], talk: true,
+      name: '블루 피버 조직원', short: '조직원', en: 'BLUE FEVER', hp: 4, atk: [3, 4], talk: true,
       desc: '바자르의 클럽을 지키는 갱단원들. 블루 기운에 겁이 없다.',
       intro: '"킹 펄이 너를 보고 싶어 하셔. 케이스랑 같이." 파란 눈의 조직원들이 칼을 꺼낸다.',
       txt: { talk: '"…킹 펄한텐 못 찾았다고 하지 뭐." 조직원들이 슬그머니 칼을 집어넣는다.', win: '조직원들이 네온 간판 아래 널브러진다. 주머니에서 파란 앰플이 굴러 나온다.' },
       loot: { cred: [30, 55], items: [['stim', 0.35], ['medkit', 0.2]] },
     },
     riot: {
-      name: '아이언사이드 기동대', short: '기동대', en: 'IRONSIDE RIOT UNIT', hp: 4, atk: [2, 4], talk: true,
+      name: '아이언사이드 기동대', short: '기동대', en: 'IRONSIDE RIOT UNIT', hp: 5, atk: [3, 5], talk: true,
       desc: '중무장 진압 부대. 외골격 슈트 때문에 근접전은 불리하다.',
       mods: { body: -10, cool: -10 },
       intro: '외골격 슈트의 유압 장치가 쉭쉭거린다. "현상금 대상 확인. 무력 제압 승인."',
@@ -150,7 +150,7 @@
       loot: { cred: [30, 60], items: [['medkit', 0.35], ['grenade', 0.25]] },
     },
     hounds: {
-      name: '카론의 사냥개', short: '사냥개', en: 'HOUNDS', hp: 4, atk: [2, 4], mech: true,
+      name: '카론의 사냥개', short: '사냥개', en: 'HOUNDS', hp: 5, atk: [2, 5], mech: true,
       desc: '카론이 풀어 놓은 추적 드론 무리. 하나가 보면, 전부가 본다.',
       mods: { net: 15, body: -10 }, weak: { net: 1 }, fleeMod: -10,
       intro: '네 발 달린 그림자들이 지붕 위에서 뛰어내린다. 붉은 센서가 일제히 켜진다.',
@@ -158,14 +158,14 @@
       loot: { cred: [15, 30], items: [['emp', 0.35]] },
     },
     hyenas: {
-      name: '현상금 사냥단 「하이에나」', short: '하이에나', en: 'HYENAS', hp: 4, atk: [2, 4], talk: true,
+      name: '현상금 사냥단 「하이에나」', short: '하이에나', en: 'HYENAS', hp: 5, atk: [3, 5], talk: true,
       desc: '셋이서 사냥하는 현상금 사냥꾼 팀. 웃음소리가 인공 성대에서 나온다.',
       intro: '킬킬거리는 웃음소리가 세 방향에서 들린다. "오십만이 걸어 다니네."',
       txt: { talk: '"킬킬… 오늘은 배가 안 고프네." 하이에나들이 웃으며 흩어진다.', win: '웃음소리가 하나씩 꺼진다. 마지막 인공 성대가 지직거리며 멈춘다.' },
       loot: { cred: [50, 80], items: [['grenade', 0.35], ['smoke', 0.3]] },
     },
     mad_diver: {
-      name: '폭주한 다이버', short: '다이버', en: 'ROGUE DIVER', hp: 3, atk: [2, 4],
+      name: '폭주한 다이버', short: '다이버', en: 'ROGUE DIVER', hp: 4, atk: [2, 5],
       desc: '넷에서 너무 오래 살다가 돌아오는 길을 잃은 다이버. 포트가 열 개 넘게 박혀 있다.',
       mods: { net: -15, body: 15 },
       intro: '"그 안에… 그 안에 누가 있어. 들려. 나한테 줘. 나한테 줘!" 다이버의 포트에서 불꽃이 튄다.',
@@ -173,7 +173,7 @@
       loot: { cred: [10, 30], items: [['icebreaker', 0.5]] },
     },
     raid: {
-      name: '급습조', short: '급습조', en: 'RAID TEAM', hp: 4, atk: [2, 4],
+      name: '급습조', short: '급습조', en: 'RAID TEAM', hp: 4, atk: [3, 4],
       desc: '백야가 직접 보낸 정예 급습조. 천장과 창문으로 동시에 들어왔다.',
       mods: { cool: -20 },
       intro: '천장이 무너진다. 섬광탄. 귀가 먹먹하다. 검은 전투복들이 연기 속에서 쏟아진다.',
@@ -181,7 +181,7 @@
       loot: { cred: [20, 40], items: [['medkit', 0.4], ['grenade', 0.3]] },
     },
     pearl_guards: {
-      name: '킹 펄의 경호원', short: '경호원', en: 'PEARL GUARD', hp: 4, atk: [2, 4], talk: true,
+      name: '킹 펄의 경호원', short: '경호원', en: 'PEARL GUARD', hp: 4, atk: [3, 5], talk: true,
       desc: '블루 피버 두목의 경호원 둘. 둘 다 피부 아래에 장갑판을 깔았다.',
       mods: { body: -10 },
       intro: '"킹께서는 빚쟁이 얼굴을 보는 걸 싫어하셔." 경호원들이 너클을 낀다.',
@@ -215,7 +215,7 @@
       loot: { cred: [0, 0] },
     },
     hunters2: {
-      name: '백야 회수팀', short: '회수팀', en: 'RETRIEVAL TEAM', hp: 4, atk: [2, 4], talk: true,
+      name: '백야 회수팀', short: '회수팀', en: 'RETRIEVAL TEAM', hp: 5, atk: [3, 5], talk: true,
       desc: '카론의 지휘를 받는 회수 전문 요원들. 포획용 그물총을 들었다.',
       intro: '"목표 확인. 케이스 손상 금지. 운반책은… 상관없다." 그물총이 일제히 당신을 향한다.',
       txt: { talk: '"…보고서엔 놓쳤다고 쓰지. 카론님께는 네가 직접 설명해라." 회수팀이 물러난다.', win: '회수팀이 쓰러진다. 그들의 무전기에서 침착한 목소리가 들린다. "괜찮습니다. 어디로 가는지는 알고 있으니까."' },
@@ -224,7 +224,7 @@
 
     /* ---- ACT 3 ---- */
     spire_guard: {
-      name: '스파이어 경비대', short: '경비대', en: 'SPIRE SECURITY', hp: 4, atk: [2, 5], talk: true,
+      name: '스파이어 경비대', short: '경비대', en: 'SPIRE SECURITY', hp: 5, atk: [3, 5], talk: true,
       desc: '백야 본사 직속 경비 병력. 하얀 장갑복, 무표정한 헬멧.',
       mods: { cool: -10 },
       intro: '"신원 미확인 인원. 할시온 데이 보안 등급 흑(黑). 즉결 처리를 승인한다."',
@@ -232,7 +232,7 @@
       loot: { cred: [30, 60], items: [['nanoheal', 0.3], ['medkit', 0.3]] },
     },
     turrets: {
-      name: '자동 방어 포탑', short: '포탑', en: 'AUTO TURRETS', hp: 3, atk: [3, 5], mech: true,
+      name: '자동 방어 포탑', short: '포탑', en: 'AUTO TURRETS', hp: 4, atk: [3, 6], mech: true,
       desc: '천장에서 내려온 쌍열 포탑 두 기. 해킹에 취약하지만, 맞으면 끝이다.',
       mods: { net: 20, body: -15 }, weak: { net: 1 }, fleeMod: 10,
       intro: '천장 패널이 열린다. 기계음과 함께 포탑 두 기가 회전한다. 「침입자 확인」.',
@@ -240,14 +240,14 @@
       loot: { cred: [10, 20], items: [['emp', 0.4]] },
     },
     lab_sec: {
-      name: '연구동 보안팀', short: '보안팀', en: 'LAB SECURITY', hp: 4, atk: [2, 4], talk: true,
+      name: '연구동 보안팀', short: '보안팀', en: 'LAB SECURITY', hp: 5, atk: [3, 5], talk: true,
       desc: '연구원 감시를 맡은 보안 요원들. 서유진 박사의 격리실을 지킨다.',
       intro: '경보음. "격리 구역 침입! 박사를 확보하라!"',
       txt: { talk: '"…박사님을 해치러 온 게 아니라면…" 보안 요원 하나가 총을 내린다. 그도 지쳐 있다.', win: '보안팀이 쓰러진다. 격리실 유리 너머에서, 서유진 박사가 그 모든 걸 보고 있다.' },
       loot: { cred: [20, 40], items: [['medkit', 0.4]] },
     },
     lobby: {
-      name: '로비 경비 병력', short: '경비 병력', en: 'LOBBY DEFENSE', hp: 5, atk: [2, 4],
+      name: '로비 경비 병력', short: '경비 병력', en: 'LOBBY DEFENSE', hp: 5, atk: [3, 5],
       desc: '정문을 지키는 경비 병력 전원. 정면 돌파는 정면으로 대가를 치른다.',
       mods: { cool: -20 },
       intro: '정문의 강화유리가 산산조각 난다. 로비의 경비 병력이 일제히 돌아선다.',
@@ -255,7 +255,7 @@
       loot: { cred: [40, 70], items: [['nanoheal', 0.5]] },
     },
     kerberos: {
-      name: '케르베로스', short: '케르베로스', en: 'SECURITY AI · KERBEROS', hp: 5, atk: [3, 5], boss: true, noflee: true, mech: true,
+      name: '케르베로스', short: '케르베로스', en: 'SECURITY AI · KERBEROS', hp: 5, atk: [3, 6], boss: true, noflee: true, mech: true,
       desc: '머리가 셋 달린 사족 보안 기체. 카론이 없는 자리를 스파이어의 방어 AI가 직접 채웠다.',
       mods: { body: -10, net: 5 }, stances: ['k_hunt', 'k_sync', 'k_pounce'], weak: { net: 1 },
       intro: '격벽이 열리고, 사자만 한 강철 짐승이 걸어 나온다. 세 개의 머리가 동시에 말한다. 「통과 권한 없음」.',
@@ -296,7 +296,7 @@
       loot: { cred: [0, 0] },
     },
     hunters3: {
-      name: '백야 내부 보안대', short: '보안대', en: 'INTERNAL SECURITY', hp: 4, atk: [2, 5], talk: true,
+      name: '백야 내부 보안대', short: '보안대', en: 'INTERNAL SECURITY', hp: 5, atk: [3, 6], talk: true,
       desc: '스파이어 내부를 순찰하는 정예. 엘리베이터와 비상계단을 동시에 막는다.',
       intro: '「층간 봉쇄」. 엘리베이터 문이 열리자, 총구가 먼저 들어온다.',
       txt: { talk: '"…할시온 데이가 오면 다 잊을 텐데, 뭐 하러." 보안대가 총을 거둔다.', win: '보안대가 쓰러진다. 엘리베이터가 아무 일 없다는 듯 다음 층으로 올라간다.' },

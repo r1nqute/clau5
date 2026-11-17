@@ -116,7 +116,7 @@
     const r = {
       v: 1, runNo: meta.runs, name: name, origin: originId,
       maxhp: O.hp + (up.body ? 3 : 0), hp: 0, hum: O.hum, cred: O.cred + (up.stash ? 50 : 0),
-      heat: 2, bond: 2 + (up.warmth ? 1 : 0),
+      heat: 3, bond: 2 + (up.warmth ? 1 : 0),
       stats: Object.assign({}, O.stats), items: O.items.slice(), ware: [], comps: [], dead: [],
       flags: {}, vars: {}, buffs: {}, second: !!up.second,
       act: 0, step: 0, steps: 0, enterNo: 0, seen: {}, kills: 0, newFrags: [], newLore: [],
@@ -150,7 +150,7 @@
   const price = (base) => Math.max(1, Math.round(base * priceMul()));
 
   function calcChance(stat, mod, fight) {
-    let c = 20 + 15 * statVal(stat) + (mod || 0);
+    let c = 15 + 15 * statVal(stat) + (mod || 0);
     run.comps.forEach((id) => { const C = D.comps[id]; if (C && C.bonus && C.bonus[stat]) c += C.bonus[stat]; });
     gearIds().forEach((id) => { const I = D.items[id]; if (I.bonus && I.bonus[stat]) c += I.bonus[stat]; });
     if (meta.upgrades.intuition) c += 5;
@@ -160,7 +160,7 @@
     if (P.act && P.act[run.act]) c += P.act[run.act];
     if (run.buffs.stim) c += 25;
     if (stat === 'net' && run.buffs.ice) c += 40;
-    if (run.hp <= Math.ceil(run.maxhp * 0.2)) c -= 10;
+    if (run.hp <= Math.ceil(run.maxhp * 0.3)) c -= 10;
     return clamp(Math.round(c), 5, 95);
   }
   function doRoll(stat, mod, fight) {
@@ -203,7 +203,9 @@
       add('최대 체력 ' + sgn(fx.maxhp), fx.maxhp > 0 ? 'good' : 'bad');
     }
     if (fx.hp) {
-      const b = run.hp; run.hp = Math.min(run.maxhp, run.hp + fx.hp);
+      /* 뒤 막으로 갈수록 사건 피해가 커진다 (2막 ×1.25, 3막 ×1.5) */
+      const hpd = fx.hp < 0 && run.mode === 'scene' && run.act >= 2 ? Math.round(fx.hp * (1 + 0.25 * (run.act - 1))) : fx.hp;
+      const b = run.hp; run.hp = Math.min(run.maxhp, run.hp + hpd);
       const dd = run.hp - b; if (dd) add('체력 ' + sgn(dd), dd > 0 ? 'good' : 'bad');
     }
     if (fx.hum) { const b = run.hum; run.hum = clamp(run.hum + fx.hum, 0, 10); const dd = run.hum - b; if (dd) add('인간성 ' + sgn(dd), 'soul'); }
@@ -332,7 +334,7 @@
     return cards;
   }
   function ambushChance() {
-    let c = Math.max(0, (run.heat - 3) * 7);
+    let c = Math.max(0, (run.heat - 2) * 8);
     if (meta.upgrades.stealth) c *= 0.7;
     return Math.round(c);
   }
@@ -353,6 +355,8 @@
     run.step += 1; run.steps += 1;
     const rg = wareSum('regen');
     if (rg && run.hp > 0 && run.hp < run.maxhp) run.hp = Math.min(run.maxhp, run.hp + rg);
+    /* 추적망이 좁혀 온다: 두 구역마다 열기 +1 */
+    if (run.act >= 1 && run.steps % 2 === 0 && run.heat < 10) { run.heat += 1; run.heatTick = true; } else run.heatTick = false;
     const A = D.acts[run.act];
     if (run.step >= A.script.length) {
       const next = run.act + 1;
@@ -767,7 +771,7 @@
   function hudHTML() {
     const O = D.origins[run.origin];
     const hpPct = clamp(run.hp / run.maxhp * 100, 0, 100);
-    const crit = run.hp <= Math.ceil(run.maxhp * 0.2);
+    const crit = run.hp <= Math.ceil(run.maxhp * 0.3);
     const stats = Object.keys(STAT).map((k) => `<span class="stat s-${k}"><small>${STAT[k]}</small>${statVal(k)}</span>`).join('');
     const comps = run.comps.map((c) => `<span class="comp-chip" title="${esc(D.comps[c].desc)}">${esc(D.comps[c].name)}</span>`).join('');
     const buffs = Object.keys(run.buffs).map((b) => `<span class="buff-chip">${esc(BUFF[b])}</span>`).join('');
@@ -844,6 +848,7 @@
     let h = `<section class="map">
       <div class="map-head"><div><span class="eyebrow">${run.act === 0 ? 'PROLOGUE' : 'ACT ' + run.act} · ${esc(A.en)}</span><h2>${esc(A.name)}</h2></div>${progressHTML()}</div>
       ${run.ambient ? `<div class="ambient prose">${fmt(run.ambient)}</div>` : ''}
+      ${run.heatTick && run.cards.length > 1 ? '<p class="heat-tick">추적망이 좁혀 온다 · 열기 +1</p>' : ''}
       <div class="map-sub"><span>${run.cards.length > 1 ? '다음 행선지를 고르세요' : '피할 수 없는 길이다'}</span>${run.cards.length > 1 ? `<span class="risk${risk >= 25 ? ' high' : ''}">매복 위험 ${risk}%</span>` : ''}</div>
       <div class="cards${run.cards.length === 1 ? ' single' : ''}">`;
     run.cards.forEach((c, i) => {
@@ -1011,7 +1016,7 @@
         <button class="btn ghost" data-a="settings">설정</button>
       </nav>
       <dl class="title-stats"><div><dt>시뮬레이션</dt><dd>${meta.runs}</dd></div><div><dt>폐기된 미래</dt><dd>${meta.deaths}</dd></div><div><dt>최고 도달</dt><dd>${meta.bestAct ? 'ACT ' + meta.bestAct : '—'}</dd></div></dl>
-      <p class="howto">선택지는 숫자 키로도 고를 수 있습니다. 판정은 표시된 성공률대로 굴러갑니다. 죽으면 처음부터 — 하지만 에코와 기억은 남습니다.</p>
+      <p class="howto">선택지는 숫자 키로도 고를 수 있습니다. 판정은 표시된 성공률대로 굴러갑니다. 열기가 오르면 매복이 잦아지고, 은신처에서 쉬면 내려갑니다. 죽으면 처음부터 — 하지만 에코와 기억은 남습니다.</p>
     </section>`;
   }
 
@@ -1031,7 +1036,8 @@
         <span class="o-meta">체력 ${O.hp + (meta.upgrades.body ? 3 : 0)} · ₡${O.cred + (meta.upgrades.stash ? 50 : 0)} · 인간성 ${O.hum}</span>
         <span class="o-perk">${esc(O.perkText)}</span>`}</button>`;
     });
-    h += `</div><div class="actions"><button class="btn primary" data-a="start">시뮬레이션 시작</button><button class="btn ghost" data-a="title">돌아가기</button></div></section>`;
+    h += `</div>${store.get(RUN_KEY) ? '<p class="warn">진행 중인 시뮬레이션이 있습니다. 새로 시작하면 그 기록은 사라집니다.</p>' : ''}
+      <div class="actions"><button class="btn primary" data-a="start">시뮬레이션 시작</button><button class="btn ghost" data-a="title">돌아가기</button></div></section>`;
     return h;
   }
 

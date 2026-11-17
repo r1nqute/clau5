@@ -275,6 +275,7 @@ h3.sub {
 .prog i.done { background: var(--mute); }
 .prog i.now { background: var(--neon); box-shadow: 0 0 10px var(--neon); }
 .ambient { margin-top: 18px; }
+.heat-tick { margin: 14px 0 0; font-size: 13.5px; color: var(--heat); }
 .map-sub { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 22px 0 10px; font-size: 14px; color: var(--mute); }
 .risk { font-family: var(--font-hud); font-size: 12px; letter-spacing: 0.06em; color: var(--heat); border: 1px solid rgba(255, 138, 58, 0.4); padding: 1px 8px; border-radius: 2px; white-space: nowrap; }
 .risk.high { background: rgba(255, 138, 58, 0.15); animation: pulse 1.6s infinite; }
@@ -515,11 +516,12 @@ body.still *, body.still *::before, body.still *::after { animation: none !impor
 /* ---------- narrow screens ---------- */
 @media (max-width: 560px) {
   body { font-size: 15.5px; }
-  .hud-meters { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 10px; }
+  .hud { padding-block: 8px 7px; }
+  .hud-meters { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 10px; margin-top: 6px; }
   .meter.hp { grid-column: 1 / -1; }
-  .meter:not(.hp) { flex-direction: column; align-items: flex-start; gap: 2px; }
-  .meter:not(.hp) .pips { width: 100%; }
-  .meter.cred { grid-column: auto; }
+  .meter:not(.hp) { align-items: baseline; gap: 5px; }
+  .meter:not(.hp) .pips { display: none; }
+  .hud-stats { margin-top: 6px; }
   .hud-act { font-size: 11px; letter-spacing: 0.06em; }
   .hud-id span { display: none; }
   .choice { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px 10px 8px; }
